@@ -30,9 +30,13 @@ import androidx.navigation.compose.rememberNavController
 import com.ko2ic.sample.ui.theme.SpikeonetimeeventsTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
+
+    override fun onDestroy() {
+        super.onDestroy()
+        println("count onDestroy")
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,10 +47,14 @@ class MainActivity : ComponentActivity() {
                 NavHost(navController = navController, startDestination = "firstPage") {
                     composable("firstPage") {
                         val viewModel = viewModel<MainViewModel>()
-                        ObserveAsEvents(viewModel.navigationChannelFlow) { event ->
+                        ObserveAsEvents(viewModel.navigationChannel) { event ->
                             when (event) {
                                 is MainViewModel.TransitionEvent.OnClickNextPage -> {
                                     navController.navigate("nextPage")
+                                }
+
+                                is MainViewModel.TransitionEvent.PrintState -> {
+                                    println("Count ${event.count}")
                                 }
                             }
                         }
@@ -55,6 +63,10 @@ class MainActivity : ComponentActivity() {
                             when (event) {
                                 is MainViewModel.TransitionEvent.OnClickNextPage -> {
                                     navController.navigate("nextPage")
+                                }
+
+                                is MainViewModel.TransitionEvent.PrintState -> {
+                                    println("Count ${event.count}")
                                 }
                             }
                         }
@@ -164,9 +176,7 @@ fun <T> ObserveAsEvents(flow: Flow<T>, onEvent: (T) -> Unit) {
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(flow, lifecycleOwner.lifecycle) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-            withContext(Dispatchers.Main.immediate) {
-                flow.collect(onEvent)
-            }
+            flow.collect(onEvent)
         }
     }
 }

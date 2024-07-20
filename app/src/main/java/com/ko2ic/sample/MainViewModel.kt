@@ -17,8 +17,8 @@ import kotlinx.coroutines.launch
 
 class MainViewModel : ViewModel() {
 
-    private val navigationChannel = Channel<TransitionEvent>()
-    val navigationChannelFlow = navigationChannel.receiveAsFlow()
+    private val _navigationChannel = Channel<TransitionEvent>()
+    val navigationChannel = _navigationChannel.receiveAsFlow()
 
     private val _navigationSharedFlow = MutableSharedFlow<TransitionEvent>(
         replay = 1,
@@ -32,21 +32,34 @@ class MainViewModel : ViewModel() {
     var uiState by mutableStateOf(MainState())
         private set
 
+    override fun onCleared() {
+        super.onCleared()
+        _navigationChannel.close()
+    }
+
     fun onClickNextPageByChannel() {
         viewModelScope.launch {
-            uiState = uiState.copy(isLoading = true)
-            delay(3_000)
-            navigationChannel.send(TransitionEvent.OnClickNextPage)
-            uiState = uiState.copy(isLoading = false)
+            repeat(1000) {
+                delay(3L)
+                _navigationChannel.send(TransitionEvent.PrintState(it))
+            }
+//            uiState = uiState.copy(isLoading = true)
+//            delay(3_000)
+//            navigationChannel.send(TransitionEvent.OnClickNextPage)
+//            uiState = uiState.copy(isLoading = false)
         }
     }
 
     fun onClickNextPageBySharedFlow() {
         viewModelScope.launch {
-            uiState = uiState.copy(isLoading = true)
-            delay(3_000)
-            _navigationSharedFlow.emit(TransitionEvent.OnClickNextPage)
-            uiState = uiState.copy(isLoading = false)
+            repeat(1000) {
+                delay(3L)
+                _navigationSharedFlow.emit(TransitionEvent.PrintState(it))
+            }
+//            uiState = uiState.copy(isLoading = true)
+//            delay(3_000)
+//            _navigationSharedFlow.emit(TransitionEvent.OnClickNextPage)
+//            uiState = uiState.copy(isLoading = false)
         }
     }
 
@@ -80,6 +93,7 @@ class MainViewModel : ViewModel() {
     sealed interface TransitionEvent {
 
         data object OnClickNextPage : TransitionEvent
+        data class PrintState(val count: Int) : TransitionEvent
     }
 }
 
